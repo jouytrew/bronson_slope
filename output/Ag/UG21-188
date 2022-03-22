@@ -1,0 +1,4 @@
+,weight,grade,cml_weight,weight_pct,cml_weight_pct,yield,cml_yield,cml_grade,recovery,cml_recovery,distributional_heterogeneity
+0,1.0,,1.0,0.3333333333333333,0.3333333333333333,,,,,,
+1,1.0,,2.0,0.3333333333333333,0.6666666666666666,,,,,,
+2,1.0,,3.0,0.3333333333333333,1.0,,,,,,
