@@ -12,18 +12,19 @@ class Resource:
             "weight": weights,
             "grade": grades
         }
-        self.info = pd.DataFrame(data)
+        sorted_info = self.sort_info(pd.DataFrame(data))
         
-        self.sort_info()
-        self.calculate_metadata()
+        self.info = self.calculate_metadata(sorted_info)
         self.calculate_heterogeneity()
        
-    def sort_info(self):
-        self.info.sort_values(by='grade', ascending=False, inplace=True)
-        self.info.reset_index(drop=True,inplace=True)
+    def sort_info(self, data: pd.DataFrame):
+        data.sort_values(by='grade', ascending=False, inplace=True)
+        data.reset_index(drop=True,inplace=True)
+        
+        return data
          
-    def calculate_metadata(self):
-        df = self.info
+    def calculate_metadata(self, sorted_info):
+        df = sorted_info
         df['cml_weight'] = df['weight'].cumsum()
     
         sum_weights = sum(df['weight'])
@@ -36,6 +37,8 @@ class Resource:
         sum_yield = sum(df['yield'])
         df['recovery'] = np.divide(df['yield'], sum_yield)
         df['cml_recovery'] = df['recovery'].cumsum()
+        
+        return df
     
     def calculate_heterogeneity(self):
         df = self.info
@@ -50,7 +53,7 @@ class Resource:
         self.cons_het = len(df) * sum(df['dist_het'])
         
     def plot_grade_recovery_curve(self, ax: plt.Figure):
-        s = 4
+        s = 3
         
         df = self.info
         ax_sec = ax.twinx()
@@ -105,7 +108,7 @@ class Grouping:
         fig, axs = plt.subplots(len(self.resources), figsize=(8, (6 * len(self.resources))))
         
         # TODO: Fix this to better handle one or more resources
-        if len(self.resources == 1):
+        if len(self.resources) == 1:
             axs.set_title(f'ID: {self.id}')
             
             for i, resource_id in enumerate(self.resources.keys()):
