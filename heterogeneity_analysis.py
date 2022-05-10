@@ -65,7 +65,7 @@ class Resource:
         ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0))
 
         y = df['cml_grade']
-        ax.set_ylabel(f"Cumulative {self.id} Grade", c="blue") 
+        ax.set_ylabel(f"Cumulative {self.id} Grade", c="blue")
 
         ax.plot(x, y, color='blue', alpha=0.2, ls='--')
         ax.scatter(x, y, color='blue', s=s)
@@ -83,13 +83,20 @@ class Resource:
         ax_sec.scatter(x, y, color='red', s=s)
 
         y_prime = np.subtract(y, x)
+        x_star = np.argmax(y_prime)
         ax_sec.plot(x, y_prime, color='red', alpha=0.2, ls=':')
 
-        x_max, y_max = x[np.argmax(y_prime)], y[np.argmax(y_prime)]
-        ax_sec.plot([x_max, x_max], [0, y_max], c="black", ls=':', alpha=0.35)
-        ax_sec.annotate(f"{x_max * 100:.3}%", (x_max, 0), xytext=(5, 10), textcoords='offset points', rotation=90)
-        ax_sec.plot([x_max, 1], [y_max, y_max], c="black", ls=':', alpha=0.35)
-        ax_sec.annotate(f"{y_max * 100:.3}%", (1, y_max), xytext=(-35, -15), textcoords='offset points')
+        x_rec, y_rec = x[x_star], y[x_star]
+        ax_sec.plot([x_rec, 1], [y_rec, y_rec], c="black", ls=':', alpha=0.35)
+        ax_sec.annotate(f"{y_rec * 100:.3}%", (1, y_rec), xytext=(-35, -15), textcoords='offset points')
+        
+        y_grade = df['cml_grade'][x_star]
+        ax.plot([min(df['cml_grade']), x_rec], [y_grade, y_grade], c="black", ls=':', alpha=0.35)
+        ax.annotate(f"{y_grade:.3}", (0, y_grade), xytext=(5, 10), textcoords='offset points')
+        
+        ax.plot([x_rec, x_rec], [0, y_grade], c="black", ls=':', alpha=0.35)
+        ax_sec.plot([x_rec, x_rec], [0, y_rec], c="black", ls=':', alpha=0.35)
+        ax_sec.annotate(f"{x_rec * 100:.3}%", (x_rec, 0), xytext=(5, 10), textcoords='offset points', rotation=90)
 
 
 
@@ -120,4 +127,3 @@ class Grouping:
                 self.resources[resource_id].plot_grade_recovery_curve(axs[i])
 
         return fig
-    
