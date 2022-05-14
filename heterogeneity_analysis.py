@@ -12,10 +12,12 @@ class Resource:
             "weight": weights,
             "grade": grades
         }
-        sorted_info = self.sort_info(pd.DataFrame(data))
+        df = pd.DataFrame(data)
+        df = df.dropna(axis=0)
+        sorted_info = self.sort_info(df)
         
         self.info = self.calculate_metadata(sorted_info)
-        self.calculate_heterogeneity()
+        self.cons_het = self.calculate_heterogeneity(self.info)
        
     def sort_info(self, data: pd.DataFrame):
         data.sort_values(by='grade', ascending=False, inplace=True)
@@ -40,17 +42,18 @@ class Resource:
         
         return df
     
-    def calculate_heterogeneity(self):
-        df = self.info
-        
-        b = df['weight']
-        c = df['cml_grade'].iloc[-1]
-        d = sum(df['weight'])
-        a = np.subtract(df['grade'], c)
-        
-        num, den = np.multiply(a, b), np.multiply(c, d)
-        df['dist_het'] = np.power(np.divide(num, den), 2)  # (num/den)^2
-        self.cons_het = len(df) * sum(df['dist_het'])
+    def calculate_heterogeneity(self, df):
+        if len(df) > 0:
+            b = df['weight']
+            c = df['cml_grade'].iloc[-1]
+            d = sum(df['weight'])
+            a = np.subtract(df['grade'], c)
+            
+            num, den = np.multiply(a, b), np.multiply(c, d)
+            df['dist_het'] = np.power(np.divide(num, den), 2)  # (num/den)^2
+            return len(df) * sum(df['dist_het'])
+        else:
+            return np.NaN
         
     def plot_grade_recovery_curve(self, ax: plt.Figure):
         s = 3
@@ -65,6 +68,7 @@ class Resource:
         ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0))
 
         y = df['cml_grade']
+        # ax.set_ylim(0, y.quantile(q=0.99))
         ax.set_ylabel(f"Cumulative {self.id} Grade", c="blue")
 
         ax.plot(x, y, color='blue', alpha=0.2, ls='--')
@@ -91,10 +95,10 @@ class Resource:
         ax_sec.annotate(f"{y_rec * 100:.3}%", (1, y_rec), xytext=(-35, -15), textcoords='offset points')
         
         y_grade = df['cml_grade'][x_star]
-        ax.plot([min(df['cml_grade']), x_rec], [y_grade, y_grade], c="black", ls=':', alpha=0.35)
+        ax.plot([0, x_rec], [y_grade, y_grade], c="black", ls=':', alpha=0.35)
         ax.annotate(f"{y_grade:.3}", (0, y_grade), xytext=(5, 10), textcoords='offset points')
         
-        ax.plot([x_rec, x_rec], [0, y_grade], c="black", ls=':', alpha=0.35)
+        ax.plot([x_rec, x_rec], [min(df['cml_grade']), y_grade], c="black", ls=':', alpha=0.35)
         ax_sec.plot([x_rec, x_rec], [0, y_rec], c="black", ls=':', alpha=0.35)
         ax_sec.annotate(f"{x_rec * 100:.3}%", (x_rec, 0), xytext=(5, 10), textcoords='offset points', rotation=90)
 
@@ -116,14 +120,26 @@ class Grouping:
         
         # TODO: Fix this to better handle one or more resources
         if len(self.resources) == 1:
-            axs.set_title(f'ID: {self.id}')
+            axs.set_title(f'{self.id}')
             
             for i, resource_id in enumerate(self.resources.keys()):
                 self.resources[resource_id].plot_grade_recovery_curve(axs)
         else:
-            axs[0].set_title(f'ID: {self.id}')
+            axs[0].set_title(f'{self.id}')
 
             for i, resource_id in enumerate(self.resources.keys()):
                 self.resources[resource_id].plot_grade_recovery_curve(axs[i])
 
         return fig
+    
+    def plot_grade_recovery_curves_separate(self):
+        figs = {}
+        
+        for resource_id in self.resources.keys():
+            fig, ax = plt.subplots(figsize=(7, 6))
+            ax.set_title(f'{self.id} {resource_id}')
+            
+            self.resources[resource_id].plot_grade_recovery_curve(ax)
+            figs[resource_id] = fig
+
+        return figs
